@@ -29,11 +29,13 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ApplicationInfo;
 
+import static org.libsdl.app.SDLActivity.TAG;
+
 /**
     SDL Activity
 */
 public class SDLActivity extends Activity {
-    private static final String TAG = "SDL";
+    public static final String TAG = "SDL+TJY";
 
     public static boolean mIsResumedCalled, mIsSurfaceReady, mHasFocus;
 
@@ -147,9 +149,9 @@ public class SDLActivity extends Activity {
     // Setup
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.v(TAG, "Device: " + android.os.Build.DEVICE);
-        Log.v(TAG, "Model: " + android.os.Build.MODEL);
-        Log.v(TAG, "onCreate()");
+        Log.d(TAG, "Device: " + android.os.Build.DEVICE);
+        Log.d(TAG, "Model: " + android.os.Build.MODEL);
+        Log.d(TAG, "onCreate()");
         super.onCreate(savedInstanceState);
 
         // Load shared libraries
@@ -221,7 +223,7 @@ public class SDLActivity extends Activity {
         if (intent != null && intent.getData() != null) {
             String filename = intent.getData().getPath();
             if (filename != null) {
-                Log.v(TAG, "Got filename: " + filename);
+                Log.d(TAG, "Got filename: " + filename);
                 SDLActivity.onNativeDropFile(filename);
             }
         }
@@ -230,7 +232,7 @@ public class SDLActivity extends Activity {
     // Events
     @Override
     protected void onPause() {
-        Log.v(TAG, "onPause()");
+        Log.d(TAG, "onPause()");
         super.onPause();
         mNextNativeState = NativeState.PAUSED;
         mIsResumedCalled = false;
@@ -244,7 +246,7 @@ public class SDLActivity extends Activity {
 
     @Override
     protected void onResume() {
-        Log.v(TAG, "onResume()");
+        Log.d(TAG, "onResume()");
         super.onResume();
         mNextNativeState = NativeState.RESUMED;
         mIsResumedCalled = true;
@@ -260,7 +262,7 @@ public class SDLActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        Log.v(TAG, "onWindowFocusChanged(): " + hasFocus);
+        Log.d(TAG, "onWindowFocusChanged(): " + hasFocus);
 
         if (SDLActivity.mBrokenLibraries) {
            return;
@@ -278,7 +280,7 @@ public class SDLActivity extends Activity {
 
     @Override
     public void onLowMemory() {
-        Log.v(TAG, "onLowMemory()");
+        Log.d(TAG, "onLowMemory()");
         super.onLowMemory();
 
         if (SDLActivity.mBrokenLibraries) {
@@ -290,7 +292,7 @@ public class SDLActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        Log.v(TAG, "onDestroy()");
+        Log.d(TAG, "onDestroy()");
 
         if (SDLActivity.mBrokenLibraries) {
            super.onDestroy();
@@ -311,11 +313,11 @@ public class SDLActivity extends Activity {
             try {
                 SDLActivity.mSDLThread.join();
             } catch(Exception e) {
-                Log.v(TAG, "Problem stopping thread: " + e);
+                Log.d(TAG, "Problem stopping thread: " + e);
             }
             SDLActivity.mSDLThread = null;
 
-            //Log.v(TAG, "Finished waiting for SDL thread");
+            //Log.d(TAG, "Finished waiting for SDL thread");
         }
 
         super.onDestroy();
@@ -597,7 +599,7 @@ public class SDLActivity extends Activity {
             }
         }
 
-        Log.v("SDL", "setOrientation() orientation=" + orientation + " width=" + w +" height="+ h +" resizable=" + resizable + " hint=" + hint);
+        Log.d(TAG, "setOrientation() orientation=" + orientation + " width=" + w +" height="+ h +" resizable=" + resizable + " hint=" + hint);
         if (orientation != -1) {
             mSingleton.setRequestedOrientation(orientation);
         }
@@ -676,7 +678,7 @@ public class SDLActivity extends Activity {
             /* environment variables set! */
             return true; 
         } catch (Exception e) {
-           Log.v("SDL", "exception " + e.toString());
+           Log.d(TAG, "exception " + e.toString());
         }
         return false;
     }
@@ -1079,10 +1081,10 @@ class SDLMain implements Runnable {
         String function = SDLActivity.mSingleton.getMainFunction();
         String[] arguments = SDLActivity.mSingleton.getArguments();
 
-        Log.v("SDL", "Running main function " + function + " from library " + library);
+        Log.d(TAG, "Running main function " + function + " from library " + library);
         SDLActivity.nativeRunMain(library, function, arguments);
 
-        Log.v("SDL", "Finished main function");
+        Log.d(TAG, "Finished main function");
 
         // Native thread has finished, let's finish the Activity
         if (!SDLActivity.mExitCalledFromJava) {
@@ -1151,14 +1153,14 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
     // Called when we have a valid drawing surface
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        Log.v("SDL", "surfaceCreated()");
+        Log.d(TAG, "surfaceCreated()");
         holder.setType(SurfaceHolder.SURFACE_TYPE_GPU);
     }
 
     // Called when we lose the surface
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        Log.v("SDL", "surfaceDestroyed()");
+        Log.d(TAG, "surfaceDestroyed()");
 
         // Transition to pause, if needed
         SDLActivity.mNextNativeState = SDLActivity.NativeState.PAUSED;
@@ -1172,57 +1174,57 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
     @Override
     public void surfaceChanged(SurfaceHolder holder,
                                int format, int width, int height) {
-        Log.v("SDL", "surfaceChanged()");
+        Log.d(TAG, "surfaceChanged()");
 
         int sdlFormat = 0x15151002; // SDL_PIXELFORMAT_RGB565 by default
         switch (format) {
         case PixelFormat.A_8:
-            Log.v("SDL", "pixel format A_8");
+            Log.d(TAG, "pixel format A_8");
             break;
         case PixelFormat.LA_88:
-            Log.v("SDL", "pixel format LA_88");
+            Log.d(TAG, "pixel format LA_88");
             break;
         case PixelFormat.L_8:
-            Log.v("SDL", "pixel format L_8");
+            Log.d(TAG, "pixel format L_8");
             break;
         case PixelFormat.RGBA_4444:
-            Log.v("SDL", "pixel format RGBA_4444");
+            Log.d(TAG, "pixel format RGBA_4444");
             sdlFormat = 0x15421002; // SDL_PIXELFORMAT_RGBA4444
             break;
         case PixelFormat.RGBA_5551:
-            Log.v("SDL", "pixel format RGBA_5551");
+            Log.d(TAG, "pixel format RGBA_5551");
             sdlFormat = 0x15441002; // SDL_PIXELFORMAT_RGBA5551
             break;
         case PixelFormat.RGBA_8888:
-            Log.v("SDL", "pixel format RGBA_8888");
+            Log.d(TAG, "pixel format RGBA_8888");
             sdlFormat = 0x16462004; // SDL_PIXELFORMAT_RGBA8888
             break;
         case PixelFormat.RGBX_8888:
-            Log.v("SDL", "pixel format RGBX_8888");
+            Log.d(TAG, "pixel format RGBX_8888");
             sdlFormat = 0x16261804; // SDL_PIXELFORMAT_RGBX8888
             break;
         case PixelFormat.RGB_332:
-            Log.v("SDL", "pixel format RGB_332");
+            Log.d(TAG, "pixel format RGB_332");
             sdlFormat = 0x14110801; // SDL_PIXELFORMAT_RGB332
             break;
         case PixelFormat.RGB_565:
-            Log.v("SDL", "pixel format RGB_565");
+            Log.d(TAG, "pixel format RGB_565");
             sdlFormat = 0x15151002; // SDL_PIXELFORMAT_RGB565
             break;
         case PixelFormat.RGB_888:
-            Log.v("SDL", "pixel format RGB_888");
+            Log.d(TAG, "pixel format RGB_888");
             // Not sure this is right, maybe SDL_PIXELFORMAT_RGB24 instead?
             sdlFormat = 0x16161804; // SDL_PIXELFORMAT_RGB888
             break;
         default:
-            Log.v("SDL", "pixel format unknown " + format);
+            Log.d(TAG, "pixel format unknown " + format);
             break;
         }
 
         mWidth = width;
         mHeight = height;
         SDLActivity.onNativeResize(width, height, sdlFormat, mDisplay.getRefreshRate());
-        Log.v("SDL", "Window size: " + width + "x" + height);
+        Log.d(TAG, "Window size: " + width + "x" + height);
 
 
         boolean skip = false;
@@ -1249,13 +1251,13 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
            double max = Math.max(mWidth, mHeight);
 
            if (max / min < 1.20) {
-              Log.v("SDL", "Don't skip on such aspect-ratio. Could be a square resolution.");
+              Log.d(TAG, "Don't skip on such aspect-ratio. Could be a square resolution.");
               skip = false;
            }
         }
 
         if (skip) {
-           Log.v("SDL", "Skip .. Surface is not ready.");
+           Log.d(TAG, "Skip .. Surface is not ready.");
            SDLActivity.mIsSurfaceReady = false;
            return;
         }
@@ -1294,7 +1296,7 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
 
         if ((event.getSource() & InputDevice.SOURCE_KEYBOARD) != 0) {
             if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                //Log.v("SDL", "key down: " + keyCode);
+                //Log.d(TAG, "key down: " + keyCode);
                 if (SDLActivity.isTextInputEvent(event)) {
                     SDLInputConnection.nativeCommitText(String.valueOf((char) event.getUnicodeChar()), 1);
                 }
@@ -1302,7 +1304,7 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
                 return true;
             }
             else if (event.getAction() == KeyEvent.ACTION_UP) {
-                //Log.v("SDL", "key up: " + keyCode);
+                //Log.d(TAG, "key up: " + keyCode);
                 SDLActivity.onNativeKeyUp(keyCode);
                 return true;
             }
