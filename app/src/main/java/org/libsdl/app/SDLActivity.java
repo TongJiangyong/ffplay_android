@@ -14,6 +14,7 @@ import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -43,7 +44,7 @@ public class SDLActivity extends Activity {
     public enum NativeState {
            INIT, RESUMED, PAUSED
     }
-
+    public static FrameLayout frameLayoutView;
     public static NativeState mNextNativeState;
     public static NativeState mCurrentNativeState;
 
@@ -61,7 +62,6 @@ public class SDLActivity extends Activity {
     protected static SDLSurface mSurface;
     protected static View mTextEdit;
     protected static boolean mScreenKeyboardShown;
-    protected static ViewGroup mLayout;
     protected static SDLClipboardHandler mClipboardHandler;
 
 
@@ -134,7 +134,6 @@ public class SDLActivity extends Activity {
         mSingleton = null;
         mSurface = null;
         mTextEdit = null;
-        mLayout = null;
         mClipboardHandler = null;
         mSDLThread = null;
         mExitCalledFromJava = false;
@@ -210,12 +209,10 @@ public class SDLActivity extends Activity {
 
         // Set up the surface
         mSurface = new SDLSurface(getApplication());
+        setContentView(R.layout.activity_main);
+        frameLayoutView = (FrameLayout) findViewById(R.id.view_container);
 
-        mLayout = new RelativeLayout(this);
-        mLayout.addView(mSurface);
-
-        setContentView(mLayout);
-
+        frameLayoutView.addView(mSurface);
         setWindowStyle(false);
 
         // Get filename from "Open with" of another application
@@ -709,7 +706,7 @@ public class SDLActivity extends Activity {
             if (mTextEdit == null) {
                 mTextEdit = new DummyEdit(SDL.getContext());
 
-                mLayout.addView(mTextEdit, params);
+                frameLayoutView.addView(mTextEdit, params);
             } else {
                 mTextEdit.setLayoutParams(params);
             }

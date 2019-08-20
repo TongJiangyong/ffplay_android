@@ -57,7 +57,8 @@
 #include <SDL_thread.h>
 
 #include "cmdutils.h"
-
+#include "AgoraLog.h"
+#include "../SDL2/src/video/SDL_sysvideo.h"
 #include <assert.h>
 
 const char program_name[] = "ffplay";
@@ -310,11 +311,14 @@ typedef struct VideoState {
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
-static const char *input_filename = "/sdcard/3333.mp4";
+//static const char *input_filename = "/sdcard/3333.mp4";
+static const char *input_filename = "/sdcard/444_subtitle.mp4";
 //static const char *input_filename = "http://download.agora.io/usecase/ktv01.mp4";
 //static const char *input_filename = "http://mpge.5nd.com/2019/2019-6-25/92274/1.mp3";
 //static const char *input_filename = "http://114.236.93.153:8080/download/video/m3u8/ZIBO_JAY.m3u8";
+//static const char *input_filename = "rtmp://media3.sinovision.net:1935/live/livestream";
 
+//static const char *input_filename = "rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov";
 //static const char *input_filename = "http://114.236.93.153:8080/download/video/ff_audioOnly.aac";
 //static const char *input_filename = "http://114.236.93.153:8080/download/video/ZIBO_JAY_720P.flv";
 static const char *window_title;
@@ -964,12 +968,12 @@ static void video_image_display(VideoState *is)
     Frame *vp;
     Frame *sp = NULL;
     SDL_Rect rect;
-
+    XLOGI("video_image_display");
     vp = frame_queue_peek_last(&is->pictq);
     if (is->subtitle_st) {
         if (frame_queue_nb_remaining(&is->subpq) > 0) {
             sp = frame_queue_peek(&is->subpq);
-
+            XLOGI("subtitle_st  %d %d,%d,%d",sp->width,sp->height,vp->width,vp->height);
             if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000)) {
                 if (!sp->uploaded) {
                     uint8_t* pixels[4];
@@ -1010,9 +1014,13 @@ static void video_image_display(VideoState *is)
                 sp = NULL;
         }
     }
+    XLOGI("VideoState info  %d %d,%d,%d,%d,%d,%d,%d",is->xleft,is->ytop,window->w,window->h,vp->width,vp->height,vp->sar.num,vp->sar.den);
+    XLOGI("calculate_display_rect before  %d %d,%d,%d",rect.x,rect.y,rect.w,rect.h);
 
-    calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
-
+    //fit view to full size
+    calculate_display_rect(&rect, is->xleft, is->ytop, window->w, window->h, vp->width, vp->height, vp->sar);
+    //calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
+    XLOGI("calculate_display_rect after  %d %d,%d,%d",rect.x,rect.y,rect.w,rect.h);
     if (!vp->uploaded) {
         if (upload_texture(&is->vid_texture, vp->frame, &is->img_convert_ctx) < 0)
             return;
@@ -1311,6 +1319,7 @@ static void sigterm_handler(int sig)
 static void set_default_window_size(int width, int height, AVRational sar)
 {
     SDL_Rect rect;
+    XLOGI("set_default_window_size  %d %d,%d,%d",width,height,sar.den,sar.num);
     calculate_display_rect(&rect, 0, 0, INT_MAX, height, width, height, sar);
     default_width  = rect.w;
     default_height = rect.h;
@@ -1339,6 +1348,7 @@ static int video_open(VideoState *is)
         else
             flags |= SDL_WINDOW_RESIZABLE;
         window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags);
+        XLOGI("video_open window  %d %d,%d,%d",window->x,window->y,window->w,window->h);
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
         if (window) {
             SDL_RendererInfo info;
@@ -2586,6 +2596,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         goto fail;
     av_codec_set_pkt_timebase(avctx, ic->streams[stream_index]->time_base);
 
+    //ZH 默认用软编
     codec = avcodec_find_decoder(avctx->codec_id);
 
     switch(avctx->codec_type){
@@ -2593,6 +2604,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         case AVMEDIA_TYPE_SUBTITLE: is->last_subtitle_stream = stream_index; forced_codec_name = subtitle_codec_name; break;
         case AVMEDIA_TYPE_VIDEO   : is->last_video_stream    = stream_index; forced_codec_name =    video_codec_name; break;
     }
+    XLOGI("forced_codec_name %s",forced_codec_name);
     if (forced_codec_name)
         codec = avcodec_find_decoder_by_name(forced_codec_name);
     if (!codec) {
@@ -3695,7 +3707,7 @@ int start(int argc, char **argv)
 {
     int flags;
     VideoState *is;
-
+    XLOGI("start");
     init_dynload();
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
