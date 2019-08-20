@@ -2,11 +2,50 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := ffmpeg
-
-LOCAL_SRC_FILES := ../prebuilt/libffmpeg.so
-
+LOCAL_MODULE := avcodec
+LOCAL_SRC_FILES := ../prebuilt/libavcodec.so
 include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := avdevice
+LOCAL_SRC_FILES := ../prebuilt/libavdevice.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := avfilter
+LOCAL_SRC_FILES := ../prebuilt/libavfilter.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := avformat
+LOCAL_SRC_FILES := ../prebuilt/libavformat.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := avresample
+LOCAL_SRC_FILES := ../prebuilt/libavresample.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := avutil
+LOCAL_SRC_FILES := ../prebuilt/libavutil.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := postproc
+LOCAL_SRC_FILES := ../prebuilt/libpostproc.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := swresample
+LOCAL_SRC_FILES := ../prebuilt/libswresample.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := swscale
+LOCAL_SRC_FILES := ../prebuilt/libswscale.so
+include $(PREBUILT_SHARED_LIBRARY)
+
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := SDL2
@@ -29,7 +68,18 @@ LOCAL_LDLIBS += -lGLESv2
 # for native audio
 LOCAL_LDLIBS    += -lOpenSLES
 
-LOCAL_SHARED_LIBRARIES := libffmpeg
+LOCAL_SHARED_LIBRARIES += \
+                        avcodec \
+                        avformat \
+                        avdevice \
+                        avfilter \
+                        avresample \
+                        avutil \
+                        postproc \
+                        swresample \
+                        swscale
+
+
 LOCAL_SHARED_LIBRARIES += libSDL2
 #LOCAL_SHARED_LIBRARIES += libcutil
 #LOCAL_SHARED_LIBRARIES += libstlport
