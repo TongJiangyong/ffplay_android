@@ -310,10 +310,13 @@ typedef struct VideoState {
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
-//static const char *input_filename = "/sdcard/3333.mp4";
-static const char *input_filename = "http://download.agora.io/usecase/ktv01.mp4";
+static const char *input_filename = "/sdcard/3333.mp4";
+//static const char *input_filename = "http://download.agora.io/usecase/ktv01.mp4";
 //static const char *input_filename = "http://mpge.5nd.com/2019/2019-6-25/92274/1.mp3";
+//static const char *input_filename = "http://114.236.93.153:8080/download/video/m3u8/ZIBO_JAY.m3u8";
 
+//static const char *input_filename = "http://114.236.93.153:8080/download/video/ff_audioOnly.aac";
+//static const char *input_filename = "http://114.236.93.153:8080/download/video/ZIBO_JAY_720P.flv";
 static const char *window_title;
 static int default_width  = 640;
 static int default_height = 480;
