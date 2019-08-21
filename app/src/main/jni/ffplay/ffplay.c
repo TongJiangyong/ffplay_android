@@ -46,6 +46,7 @@
 #include "libavutil/opt.h"
 #include "libavcodec/avfft.h"
 #include "libswresample/swresample.h"
+#include "libavcodec/jni.h"
 
 #if CONFIG_AVFILTER
 # include "libavfilter/avfilter.h"
@@ -311,8 +312,8 @@ typedef struct VideoState {
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
-//static const char *input_filename = "/sdcard/3333.mp4";
-static const char *input_filename = "/sdcard/444_subtitle.mp4";
+static const char *input_filename = "/sdcard/3333.mp4";
+//static const char *input_filename = "/sdcard/444_subtitle.mp4";
 //static const char *input_filename = "http://download.agora.io/usecase/ktv01.mp4";
 //static const char *input_filename = "http://mpge.5nd.com/2019/2019-6-25/92274/1.mp3";
 //static const char *input_filename = "http://114.236.93.153:8080/download/video/m3u8/ZIBO_JAY.m3u8";
@@ -351,7 +352,7 @@ static int infinite_buffer = -1;
 static enum ShowMode show_mode = SHOW_MODE_NONE;
 static const char *audio_codec_name;
 static const char *subtitle_codec_name;
-static const char *video_codec_name;
+static const char *video_codec_name = "h264_mediacodec";
 double rdftspeed = 0.02;
 static int64_t cursor_last_shown;
 static int cursor_hidden = 0;
@@ -2604,14 +2605,14 @@ static int stream_component_open(VideoState *is, int stream_index)
         case AVMEDIA_TYPE_SUBTITLE: is->last_subtitle_stream = stream_index; forced_codec_name = subtitle_codec_name; break;
         case AVMEDIA_TYPE_VIDEO   : is->last_video_stream    = stream_index; forced_codec_name =    video_codec_name; break;
     }
-    XLOGI("forced_codec_name %s",forced_codec_name);
+    XLOGI("forced_codec_name %s %d",forced_codec_name,avctx->codec_id);
     if (forced_codec_name)
         codec = avcodec_find_decoder_by_name(forced_codec_name);
     if (!codec) {
-        if (forced_codec_name) av_log(NULL, AV_LOG_WARNING,
-                                      "No codec could be found with name '%s'\n", forced_codec_name);
-        else                   av_log(NULL, AV_LOG_WARNING,
-                                      "No codec could be found with id %d\n", avctx->codec_id);
+        if (forced_codec_name) XLOGI(
+                                      "No codec could be found with name '%s'", forced_codec_name);
+        else                   XLOGI(
+                                      "No codec could be found with id %d", avctx->codec_id);
         ret = AVERROR(EINVAL);
         goto fail;
     }
@@ -3782,4 +3783,11 @@ int start(int argc, char **argv)
     /* never returns */
 
     return 0;
+}
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
+{
+    XLOGI("JNIEXPORT av_jni_set_java_vm,%d",vm);
+    av_jni_set_java_vm(vm, reserved);
+    return JNI_VERSION_1_4;
 }
