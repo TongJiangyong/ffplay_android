@@ -312,8 +312,8 @@ typedef struct VideoState {
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
-static const char *input_filename = "/sdcard/3333.mp4";
-//static const char *input_filename = "/sdcard/444_subtitle.mp4";
+//static const char *input_filename = "/sdcard/3333.mp4";
+static const char *input_filename = "/sdcard/444_subtitle.mp4";
 //static const char *input_filename = "http://download.agora.io/usecase/ktv01.mp4";
 //static const char *input_filename = "http://mpge.5nd.com/2019/2019-6-25/92274/1.mp3";
 //static const char *input_filename = "http://114.236.93.153:8080/download/video/m3u8/ZIBO_JAY.m3u8";
@@ -352,7 +352,7 @@ static int infinite_buffer = -1;
 static enum ShowMode show_mode = SHOW_MODE_NONE;
 static const char *audio_codec_name;
 static const char *subtitle_codec_name;
-static const char *video_codec_name = "h264_mediacodec";
+static const char *video_codec_name;
 double rdftspeed = 0.02;
 static int64_t cursor_last_shown;
 static int cursor_hidden = 0;
@@ -969,7 +969,6 @@ static void video_image_display(VideoState *is)
     Frame *vp;
     Frame *sp = NULL;
     SDL_Rect rect;
-    XLOGI("video_image_display");
     vp = frame_queue_peek_last(&is->pictq);
     if (is->subtitle_st) {
         if (frame_queue_nb_remaining(&is->subpq) > 0) {
@@ -1015,13 +1014,10 @@ static void video_image_display(VideoState *is)
                 sp = NULL;
         }
     }
-    XLOGI("VideoState info  %d %d,%d,%d,%d,%d,%d,%d",is->xleft,is->ytop,window->w,window->h,vp->width,vp->height,vp->sar.num,vp->sar.den);
-    XLOGI("calculate_display_rect before  %d %d,%d,%d",rect.x,rect.y,rect.w,rect.h);
 
     //fit view to full size
     calculate_display_rect(&rect, is->xleft, is->ytop, window->w, window->h, vp->width, vp->height, vp->sar);
     //calculate_display_rect(&rect, is->xleft, is->ytop, is->width, is->height, vp->width, vp->height, vp->sar);
-    XLOGI("calculate_display_rect after  %d %d,%d,%d",rect.x,rect.y,rect.w,rect.h);
     if (!vp->uploaded) {
         if (upload_texture(&is->vid_texture, vp->frame, &is->img_convert_ctx) < 0)
             return;
@@ -3787,7 +3783,7 @@ int start(int argc, char **argv)
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
 {
-    XLOGI("JNIEXPORT av_jni_set_java_vm,%d",vm);
+    XLOGI("JNIEXPORT av_jni_set_java_vm");
     av_jni_set_java_vm(vm, reserved);
     return JNI_VERSION_1_4;
 }

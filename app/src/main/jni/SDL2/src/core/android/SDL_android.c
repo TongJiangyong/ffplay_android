@@ -46,11 +46,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dlfcn.h>
-/* #define LOG_TAG "SDL_android" */
-/* #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__) */
-/* #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__) */
-#define LOGI(...) do {} while (0)
-#define LOGE(...) do {} while (0)
+#define LOG_TAG "SDL_android"
+#define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+#define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+//#define LOGI(...) do {} while (0)
+//#define LOGE(...) do {} while (0)
 
 
 #define SDL_JAVA_PREFIX                                 org_libsdl_app
@@ -58,7 +58,6 @@
 #define CONCAT2(prefix, class, function)                Java_ ## prefix ## _ ## class ## _ ## function
 #define SDL_JAVA_INTERFACE(function)                    CONCAT1(SDL_JAVA_PREFIX, SDLActivity, function)
 #define SDL_JAVA_AUDIO_INTERFACE(function)              CONCAT1(SDL_JAVA_PREFIX, SDLAudioManager, function)
-#define SDL_JAVA_CONTROLLER_INTERFACE(function)         CONCAT1(SDL_JAVA_PREFIX, SDLControllerManager, function)
 #define SDL_JAVA_INTERFACE_INPUT_CONNECTION(function)   CONCAT1(SDL_JAVA_PREFIX, SDLInputConnection, function)
 
 
@@ -83,26 +82,6 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeSurfaceChanged)(
 
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeSurfaceDestroyed)(
         JNIEnv* env, jclass jcls);
-
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeKeyDown)(
-        JNIEnv* env, jclass jcls,
-        jint keycode);
-
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeKeyUp)(
-        JNIEnv* env, jclass jcls,
-        jint keycode);
-
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeKeyboardFocusLost)(
-        JNIEnv* env, jclass jcls);
-
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeTouch)(
-        JNIEnv* env, jclass jcls,
-        jint touch_device_id_in, jint pointer_finger_id_in,
-        jint action, jfloat x, jfloat y, jfloat p);
-
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeMouse)(
-        JNIEnv* env, jclass jcls,
-        jint button, jint action, jfloat x, jfloat y);
 
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeAccel)(
         JNIEnv* env, jclass jcls,
@@ -134,56 +113,10 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetenv)(
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeEnvironmentVariablesSet)(
         JNIEnv* env, jclass cls);
 
-/* Java class SDLInputConnection */
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeCommitText)(
-        JNIEnv* env, jclass cls,
-        jstring text, jint newCursorPosition);
-
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeSetComposingText)(
-        JNIEnv* env, jclass cls,
-        jstring text, jint newCursorPosition);
 
 /* Java class SDLAudioManager */
 JNIEXPORT void JNICALL SDL_JAVA_AUDIO_INTERFACE(nativeSetupJNI)(
         JNIEnv *env, jclass jcls);
-
-/* Java class SDLControllerManager */
-JNIEXPORT void JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeSetupJNI)(
-        JNIEnv *env, jclass jcls);
-
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(onNativePadDown)(
-        JNIEnv* env, jclass jcls,
-        jint device_id, jint keycode);
-
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(onNativePadUp)(
-        JNIEnv* env, jclass jcls,
-        jint device_id, jint keycode);
-
-JNIEXPORT void JNICALL SDL_JAVA_CONTROLLER_INTERFACE(onNativeJoy)(
-        JNIEnv* env, jclass jcls,
-        jint device_id, jint axis, jfloat value);
-
-JNIEXPORT void JNICALL SDL_JAVA_CONTROLLER_INTERFACE(onNativeHat)(
-        JNIEnv* env, jclass jcls,
-        jint device_id, jint hat_id, jint x, jint y);
-
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeAddJoystick)(
-        JNIEnv* env, jclass jcls,
-        jint device_id, jstring device_name, jstring device_desc, jint is_accelerometer,
-        jint nbuttons, jint naxes, jint nhats, jint nballs);
-
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeRemoveJoystick)(
-        JNIEnv* env, jclass jcls,
-        jint device_id);
-
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeAddHaptic)(
-        JNIEnv* env, jclass jcls,
-        jint device_id, jstring device_name);
-
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeRemoveHaptic)(
-        JNIEnv* env, jclass jcls,
-        jint device_id);
-
 
 
 /* Uncomment this to log messages entering and exiting methods in this file */
@@ -213,15 +146,6 @@ static jmethodID midSetWindowStyle;
 static jmethodID midSetOrientation;
 static jmethodID midGetContext;
 static jmethodID midIsAndroidTV;
-static jmethodID midInputGetInputDeviceIds;
-static jmethodID midSendMessage;
-static jmethodID midShowTextInput;
-static jmethodID midIsScreenKeyboardShown;
-static jmethodID midClipboardSetText;
-static jmethodID midClipboardGetText;
-static jmethodID midClipboardHasText;
-static jmethodID midOpenAPKExpansionInputStream;
-static jmethodID midGetManifestEnvironmentVariables;
 static jmethodID midGetDisplayDPI;
 
 /* audio manager */
@@ -237,22 +161,11 @@ static jmethodID midCaptureReadShortBuffer;
 static jmethodID midCaptureReadByteBuffer;
 static jmethodID midCaptureClose;
 
-/* controller manager */
-static jclass mControllerManagerClass;
-
-/* method signatures */
-static jmethodID midPollInputDevices;
-static jmethodID midPollHapticDevices;
-static jmethodID midHapticRun;
-
-/* static fields */
-static jfieldID fidSeparateMouseAndTouch;
 
 /* Accelerometer data storage */
 static float fLastAccelerometer[3];
 static SDL_bool bHasNewData;
 
-static SDL_bool bHasEnvironmentVariables = SDL_FALSE;
 
 /*******************************************************************************
                  Functions called by JNI
@@ -282,7 +195,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
 
 void checkJNIReady()
 {
-    if (!mActivityClass || !mAudioManagerClass || !mControllerManagerClass) {
+    if (!mActivityClass || !mAudioManagerClass) {
         // We aren't fully initialized, let's just return.
         return;
     }
@@ -311,41 +224,12 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetupJNI)(JNIEnv* mEnv, jclass c
                                 "getContext","()Landroid/content/Context;");
     midIsAndroidTV = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
                                 "isAndroidTV","()Z");
-    midInputGetInputDeviceIds = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "inputGetInputDeviceIds", "(I)[I");
-    midSendMessage = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "sendMessage", "(II)Z");
-    midShowTextInput =  (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "showTextInput", "(IIII)Z");
-    midIsScreenKeyboardShown = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "isScreenKeyboardShown","()Z");
-    midClipboardSetText = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "clipboardSetText", "(Ljava/lang/String;)V");
-    midClipboardGetText = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "clipboardGetText", "()Ljava/lang/String;");
-    midClipboardHasText = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "clipboardHasText", "()Z");
-    midOpenAPKExpansionInputStream = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "openAPKExpansionInputStream", "(Ljava/lang/String;)Ljava/io/InputStream;");
-
-    midGetManifestEnvironmentVariables = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "getManifestEnvironmentVariables", "()Z");
-
-    midGetDisplayDPI = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass, "getDisplayDPI", "()Landroid/util/DisplayMetrics;");
     midGetDisplayDPI = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass, "getDisplayDPI", "()Landroid/util/DisplayMetrics;");
 
     if (!midGetNativeSurface ||
-       !midSetActivityTitle || !midSetWindowStyle || !midSetOrientation || !midGetContext || !midIsAndroidTV || !midInputGetInputDeviceIds ||
-       !midSendMessage || !midShowTextInput || !midIsScreenKeyboardShown ||
-       !midClipboardSetText || !midClipboardGetText || !midClipboardHasText ||
-       !midOpenAPKExpansionInputStream || !midGetManifestEnvironmentVariables|| !midGetDisplayDPI) {
+       !midSetActivityTitle || !midSetWindowStyle || !midSetOrientation || !midGetContext || !midIsAndroidTV ||
+       !midGetDisplayDPI) {
         __android_log_print(ANDROID_LOG_WARN, "SDL", "Missing some Java callbacks, do you have the latest version of SDLActivity.java?");
-    }
-
-    fidSeparateMouseAndTouch = (*mEnv)->GetStaticFieldID(mEnv, mActivityClass, "mSeparateMouseAndTouch", "Z");
-
-    if (!fidSeparateMouseAndTouch) {
-        __android_log_print(ANDROID_LOG_WARN, "SDL", "Missing some Java static fields, do you have the latest version of SDLActivity.java?");
     }
 
     checkJNIReady();
@@ -385,28 +269,6 @@ JNIEXPORT void JNICALL SDL_JAVA_AUDIO_INTERFACE(nativeSetupJNI)(JNIEnv* mEnv, jc
     checkJNIReady();
 }
 
-/* Controller initialization -- called before SDL_main() to initialize JNI bindings */
-JNIEXPORT void JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeSetupJNI)(JNIEnv* mEnv, jclass cls)
-{
-    __android_log_print(ANDROID_LOG_VERBOSE, "SDL", "CONTROLLER nativeSetupJNI()");
-
-    Android_JNI_SetupThread();
-
-    mControllerManagerClass = (jclass)((*mEnv)->NewGlobalRef(mEnv, cls));
-
-    midPollInputDevices = (*mEnv)->GetStaticMethodID(mEnv, mControllerManagerClass,
-                                "pollInputDevices", "()V");
-    midPollHapticDevices = (*mEnv)->GetStaticMethodID(mEnv, mControllerManagerClass,
-                                "pollHapticDevices", "()V");
-    midHapticRun = (*mEnv)->GetStaticMethodID(mEnv, mControllerManagerClass,
-                                "hapticRun", "(II)V");
-
-    if (!midPollInputDevices || !midPollHapticDevices || !midHapticRun) {
-        __android_log_print(ANDROID_LOG_WARN, "SDL", "Missing some Java callbacks, do you have the latest version of SDLControllerManager.java?");
-    }
-
-    checkJNIReady();
-}
 
 /* SDL main function prototype */
 typedef int (*SDL_main_func)(int argc, char *argv[]);
@@ -508,82 +370,6 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeResize)(
     Android_SetScreenResolution(width, height, format, rate);
 }
 
-/* Paddown */
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(onNativePadDown)(
-                                    JNIEnv* env, jclass jcls,
-                                    jint device_id, jint keycode)
-{
-    return Android_OnPadDown(device_id, keycode);
-}
-
-/* Padup */
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(onNativePadUp)(
-                                    JNIEnv* env, jclass jcls,
-                                    jint device_id, jint keycode)
-{
-    return Android_OnPadUp(device_id, keycode);
-}
-
-/* Joy */
-JNIEXPORT void JNICALL SDL_JAVA_CONTROLLER_INTERFACE(onNativeJoy)(
-                                    JNIEnv* env, jclass jcls,
-                                    jint device_id, jint axis, jfloat value)
-{
-    Android_OnJoy(device_id, axis, value);
-}
-
-/* POV Hat */
-JNIEXPORT void JNICALL SDL_JAVA_CONTROLLER_INTERFACE(onNativeHat)(
-                                    JNIEnv* env, jclass jcls,
-                                    jint device_id, jint hat_id, jint x, jint y)
-{
-    Android_OnHat(device_id, hat_id, x, y);
-}
-
-
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeAddJoystick)(
-                                    JNIEnv* env, jclass jcls,
-                                    jint device_id, jstring device_name, jstring device_desc, jint is_accelerometer,
-                                    jint nbuttons, jint naxes, jint nhats, jint nballs)
-{
-    int retval;
-    const char *name = (*env)->GetStringUTFChars(env, device_name, NULL);
-    const char *desc = (*env)->GetStringUTFChars(env, device_desc, NULL);
-
-    retval = Android_AddJoystick(device_id, name, desc, (SDL_bool) is_accelerometer, nbuttons, naxes, nhats, nballs);
-
-    (*env)->ReleaseStringUTFChars(env, device_name, name);
-    (*env)->ReleaseStringUTFChars(env, device_desc, desc);
-
-    return retval;
-}
-
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeRemoveJoystick)(
-                                    JNIEnv* env, jclass jcls,
-                                    jint device_id)
-{
-    return Android_RemoveJoystick(device_id);
-}
-
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeAddHaptic)(
-    JNIEnv* env, jclass jcls, jint device_id, jstring device_name)
-{
-    int retval;
-    const char *name = (*env)->GetStringUTFChars(env, device_name, NULL);
-
-    retval = Android_AddHaptic(device_id, name);
-
-    (*env)->ReleaseStringUTFChars(env, device_name, name);
-
-    return retval;
-}
-
-JNIEXPORT jint JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeRemoveHaptic)(
-    JNIEnv* env, jclass jcls, jint device_id)
-{
-    return Android_RemoveHaptic(device_id);
-}
-
 
 /* Surface Created */
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeSurfaceChanged)(JNIEnv* env, jclass jcls)
@@ -636,48 +422,6 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeSurfaceDestroyed)(JNIEnv* env,
 
     /* GL Context handling is done in the event loop because this function is run from the Java thread */
 
-}
-
-/* Keydown */
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeKeyDown)(
-                                    JNIEnv* env, jclass jcls,
-                                    jint keycode)
-{
-    Android_OnKeyDown(keycode);
-}
-
-/* Keyup */
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeKeyUp)(
-                                    JNIEnv* env, jclass jcls,
-                                    jint keycode)
-{
-    Android_OnKeyUp(keycode);
-}
-
-/* Keyboard Focus Lost */
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeKeyboardFocusLost)(
-                                    JNIEnv* env, jclass jcls)
-{
-    /* Calling SDL_StopTextInput will take care of hiding the keyboard and cleaning up the DummyText widget */
-    SDL_StopTextInput();
-}
-
-
-/* Touch */
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeTouch)(
-                                    JNIEnv* env, jclass jcls,
-                                    jint touch_device_id_in, jint pointer_finger_id_in,
-                                    jint action, jfloat x, jfloat y, jfloat p)
-{
-    Android_OnTouch(touch_device_id_in, pointer_finger_id_in, action, x, y, p);
-}
-
-/* Mouse */
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeMouse)(
-                                    JNIEnv* env, jclass jcls,
-                                    jint button, jint action, jfloat x, jfloat y)
-{
-    Android_OnMouse(button, action, x, y);
 }
 
 /* Accelerometer */
@@ -758,57 +502,6 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeResume)(
     }
 }
 
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeCommitText)(
-                                    JNIEnv* env, jclass cls,
-                                    jstring text, jint newCursorPosition)
-{
-    const char *utftext = (*env)->GetStringUTFChars(env, text, NULL);
-
-    SDL_SendKeyboardText(utftext);
-
-    (*env)->ReleaseStringUTFChars(env, text, utftext);
-}
-
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeGenerateScancodeForUnichar)(
-                                    JNIEnv* env, jclass cls,
-                                    jchar chUnicode)
-{
-    SDL_Scancode code = SDL_SCANCODE_UNKNOWN;
-    uint16_t mod = 0;
-
-    // We do not care about bigger than 127.
-    if (chUnicode < 127) {
-        AndroidKeyInfo info = unicharToAndroidKeyInfoTable[chUnicode];
-        code = info.code;
-        mod = info.mod;
-    }
-
-    if (mod & KMOD_SHIFT) {
-        /* If character uses shift, press shift down */
-        SDL_SendKeyboardKey(SDL_PRESSED, SDL_SCANCODE_LSHIFT);
-    }
-
-    /* send a keydown and keyup even for the character */
-    SDL_SendKeyboardKey(SDL_PRESSED, code);
-    SDL_SendKeyboardKey(SDL_RELEASED, code);
-
-    if (mod & KMOD_SHIFT) {
-        /* If character uses shift, press shift back up */
-        SDL_SendKeyboardKey(SDL_RELEASED, SDL_SCANCODE_LSHIFT);
-    }
-}
-
-
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE_INPUT_CONNECTION(nativeSetComposingText)(
-                                    JNIEnv* env, jclass cls,
-                                    jstring text, jint newCursorPosition)
-{
-    const char *utftext = (*env)->GetStringUTFChars(env, text, NULL);
-
-    SDL_SendEditingText(utftext, 0, 0);
-
-    (*env)->ReleaseStringUTFChars(env, text, utftext);
-}
 
 JNIEXPORT jstring JNICALL SDL_JAVA_INTERFACE(nativeGetHint)(
                                     JNIEnv* env, jclass cls,
@@ -1318,63 +1011,7 @@ static int Internal_Android_JNI_FileOpen(SDL_RWops* ctx)
 
     if (0) {
 fallback:
-        /* Disabled log message because of spam on the Nexus 7 */
-        /* __android_log_print(ANDROID_LOG_DEBUG, "SDL", "Falling back to legacy InputStream method for opening file"); */
-
-        /* Try the old method using InputStream */
-        ctx->hidden.androidio.assetFileDescriptorRef = NULL;
-
-        /* inputStream = assetManager.open(<filename>); */
-        mid = (*mEnv)->GetMethodID(mEnv, (*mEnv)->GetObjectClass(mEnv, assetManager),
-                "open", "(Ljava/lang/String;I)Ljava/io/InputStream;");
-        inputStream = (*mEnv)->CallObjectMethod(mEnv, assetManager, mid, fileNameJString, 1 /* ACCESS_RANDOM */);
-        if (Android_JNI_ExceptionOccurred(SDL_FALSE)) {
-            /* Try fallback to APK expansion files */
-            inputStream = (*mEnv)->CallStaticObjectMethod(mEnv, mActivityClass, midOpenAPKExpansionInputStream, fileNameJString);
-
-            /* Exception is checked first because it always needs to be cleared.
-             * If no exception occurred then the last SDL error message is kept.
-             */
-            if (Android_JNI_ExceptionOccurred(SDL_FALSE) || !inputStream) {
-                goto failure;
-            }
-        }
-
-        ctx->hidden.androidio.inputStreamRef = (*mEnv)->NewGlobalRef(mEnv, inputStream);
-
-        /* Despite all the visible documentation on [Asset]InputStream claiming
-         * that the .available() method is not guaranteed to return the entire file
-         * size, comments in <sdk>/samples/<ver>/ApiDemos/src/com/example/ ...
-         * android/apis/content/ReadAsset.java imply that Android's
-         * AssetInputStream.available() /will/ always return the total file size
-        */
-
-        /* size = inputStream.available(); */
-        mid = (*mEnv)->GetMethodID(mEnv, (*mEnv)->GetObjectClass(mEnv, inputStream),
-                "available", "()I");
-        ctx->hidden.androidio.size = (long)(*mEnv)->CallIntMethod(mEnv, inputStream, mid);
-        if (Android_JNI_ExceptionOccurred(SDL_FALSE)) {
-            goto failure;
-        }
-
-        /* readableByteChannel = Channels.newChannel(inputStream); */
-        channels = (*mEnv)->FindClass(mEnv, "java/nio/channels/Channels");
-        mid = (*mEnv)->GetStaticMethodID(mEnv, channels,
-                "newChannel",
-                "(Ljava/io/InputStream;)Ljava/nio/channels/ReadableByteChannel;");
-        readableByteChannel = (*mEnv)->CallStaticObjectMethod(
-                mEnv, channels, mid, inputStream);
-        if (Android_JNI_ExceptionOccurred(SDL_FALSE)) {
-            goto failure;
-        }
-
-        ctx->hidden.androidio.readableByteChannelRef =
-            (*mEnv)->NewGlobalRef(mEnv, readableByteChannel);
-
-        /* Store .read id for reading purposes */
-        mid = (*mEnv)->GetMethodID(mEnv, (*mEnv)->GetObjectClass(mEnv, readableByteChannel),
-                "read", "(Ljava/nio/ByteBuffer;)I");
-        ctx->hidden.androidio.readMethod = mid;
+        goto failure;
     }
 
     if (0) {
@@ -1648,37 +1285,17 @@ int Android_JNI_FileClose(SDL_RWops* ctx)
 
 int Android_JNI_SetClipboardText(const char* text)
 {
-    JNIEnv* env = Android_JNI_GetEnv();
-    jstring string = (*env)->NewStringUTF(env, text);
-    (*env)->CallStaticVoidMethod(env, mActivityClass, midClipboardSetText, string);
-    (*env)->DeleteLocalRef(env, string);
     return 0;
 }
 
 char* Android_JNI_GetClipboardText(void)
 {
-    JNIEnv* env = Android_JNI_GetEnv();
-    char* text = NULL;
-    jstring string;
-    
-    string = (*env)->CallStaticObjectMethod(env, mActivityClass, midClipboardGetText);
-    if (string) {
-        const char* utf = (*env)->GetStringUTFChars(env, string, 0);
-        if (utf) {
-            text = SDL_strdup(utf);
-            (*env)->ReleaseStringUTFChars(env, string, utf);
-        }
-        (*env)->DeleteLocalRef(env, string);
-    }
-    
-    return (text == NULL) ? SDL_strdup("") : text;
+    return NULL;
 }
 
 SDL_bool Android_JNI_HasClipboardText(void)
 {
-    JNIEnv* env = Android_JNI_GetEnv();
-    jboolean retval = (*env)->CallStaticBooleanMethod(env, mActivityClass, midClipboardHasText);
-    return (retval == JNI_TRUE) ? SDL_TRUE : SDL_FALSE;
+    return SDL_FALSE;
 }
 
 /* returns 0 on success or -1 on error (others undefined then)
@@ -1804,95 +1421,51 @@ int Android_JNI_GetPowerInfo(int* plugged, int* charged, int* battery, int* seco
 
 /* returns number of found touch devices as return value and ids in parameter ids */
 int Android_JNI_GetTouchDeviceIds(int **ids) {
-    JNIEnv *env = Android_JNI_GetEnv();
-    jint sources = 4098; /* == InputDevice.SOURCE_TOUCHSCREEN */
-    jintArray array = (jintArray) (*env)->CallStaticObjectMethod(env, mActivityClass, midInputGetInputDeviceIds, sources);
-    int number = 0;
-    *ids = NULL;
-    if (array) {
-        number = (int) (*env)->GetArrayLength(env, array);
-        if (0 < number) {
-            jint* elements = (*env)->GetIntArrayElements(env, array, NULL);
-            if (elements) {
-                int i;
-                *ids = SDL_malloc(number * sizeof (**ids));
-                for (i = 0; i < number; ++i) { /* not assuming sizeof (jint) == sizeof (int) */
-                    (*ids)[i] = elements[i];
-                }
-                (*env)->ReleaseIntArrayElements(env, array, elements, JNI_ABORT);
-            }
-        }
-        (*env)->DeleteLocalRef(env, array);
-    }
-    return number;
+    return 0;
 }
 
 /* sets the mSeparateMouseAndTouch field */
 void Android_JNI_SetSeparateMouseAndTouch(SDL_bool new_value)
 {
-    JNIEnv *env = Android_JNI_GetEnv();
-    (*env)->SetStaticBooleanField(env, mActivityClass, fidSeparateMouseAndTouch, new_value ? JNI_TRUE : JNI_FALSE);
+    LOGI("Android_JNI_SetSeparateMouseAndTouch");
 }
 
 void Android_JNI_PollInputDevices(void)
 {
-    JNIEnv *env = Android_JNI_GetEnv();
-    (*env)->CallStaticVoidMethod(env, mControllerManagerClass, midPollInputDevices);
+    LOGI("Android_JNI_PollInputDevices");
 }
 
 void Android_JNI_PollHapticDevices(void)
 {
-    JNIEnv *env = Android_JNI_GetEnv();
-    (*env)->CallStaticVoidMethod(env, mControllerManagerClass, midPollHapticDevices);
+    LOGI("Android_JNI_PollHapticDevices");
 }
 
 void Android_JNI_HapticRun(int device_id, int length)
 {
-    JNIEnv *env = Android_JNI_GetEnv();
-    (*env)->CallStaticVoidMethod(env, mControllerManagerClass, midHapticRun, device_id, length);
+    LOGI("Android_JNI_HapticRun");
 }
 
 
 /* See SDLActivity.java for constants. */
-#define COMMAND_SET_KEEP_SCREEN_ON    5
-
-/* sends message to be handled on the UI event dispatch thread */
-int Android_JNI_SendMessage(int command, int param)
-{
-    JNIEnv *env = Android_JNI_GetEnv();
-    jboolean success;
-    success = (*env)->CallStaticBooleanMethod(env, mActivityClass, midSendMessage, command, param);
-    return success ? 0 : -1;
-}
 
 void Android_JNI_SuspendScreenSaver(SDL_bool suspend)
 {
-    Android_JNI_SendMessage(COMMAND_SET_KEEP_SCREEN_ON, (suspend == SDL_FALSE) ? 0 : 1);
+    LOGI("Android_JNI_SuspendScreenSaver");
 }
 
 void Android_JNI_ShowTextInput(SDL_Rect *inputRect)
 {
-    JNIEnv *env = Android_JNI_GetEnv();
-    (*env)->CallStaticBooleanMethod(env, mActivityClass, midShowTextInput,
-                               inputRect->x,
-                               inputRect->y,
-                               inputRect->w,
-                               inputRect->h );
+    LOGI("Android_JNI_ShowTextInput");
 }
 
 void Android_JNI_HideTextInput(void)
 {
-    /* has to match Activity constant */
-    const int COMMAND_TEXTEDIT_HIDE = 3;
-    Android_JNI_SendMessage(COMMAND_TEXTEDIT_HIDE, 0);
+    LOGI("Android_JNI_HideTextInput");
 }
 
 SDL_bool Android_JNI_IsScreenKeyboardShown()
 {
-    JNIEnv *mEnv = Android_JNI_GetEnv();
-    jboolean is_shown = 0;
-    is_shown = (*mEnv)->CallStaticBooleanMethod(mEnv, mActivityClass, midIsScreenKeyboardShown);
-    return is_shown;
+    return SDL_FALSE;
 }
 
 
@@ -2152,18 +1725,7 @@ const char * SDL_AndroidGetExternalStoragePath(void)
 
 void Android_JNI_GetManifestEnvironmentVariables(void)
 {
-    if (!mActivityClass || !midGetManifestEnvironmentVariables) {
-        __android_log_print(ANDROID_LOG_WARN, "SDL", "Request to get environment variables before JNI is ready");
-        return;
-    }
-
-    if (!bHasEnvironmentVariables) {
-        JNIEnv *env = Android_JNI_GetEnv();
-        SDL_bool ret = (*env)->CallStaticBooleanMethod(env, mActivityClass, midGetManifestEnvironmentVariables);
-        if (ret) {
-            bHasEnvironmentVariables = SDL_TRUE;
-        }
-    }
+    LOGI("Android_JNI_GetManifestEnvironmentVariables");
 }
 
 #endif /* __ANDROID__ */

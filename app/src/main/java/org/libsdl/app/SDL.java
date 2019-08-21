@@ -12,7 +12,6 @@ public class SDL {
     public static void setupJNI() {
         SDLActivity.nativeSetupJNI();
         SDLAudioManager.nativeSetupJNI();
-        SDLControllerManager.nativeSetupJNI();
     }
 
     // This function should be called each time the activity is started
@@ -21,7 +20,6 @@ public class SDL {
 
         SDLActivity.initialize();
         SDLAudioManager.initialize();
-        SDLControllerManager.initialize();
     }
 
     // This function stores the current activity (SDL or not)
