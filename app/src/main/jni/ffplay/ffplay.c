@@ -973,7 +973,7 @@ static void video_image_display(VideoState *is)
     if (is->subtitle_st) {
         if (frame_queue_nb_remaining(&is->subpq) > 0) {
             sp = frame_queue_peek(&is->subpq);
-            XLOGI("subtitle_st  %d %d,%d,%d",sp->width,sp->height,vp->width,vp->height);
+            //XLOGI("subtitle_st  %d %d,%d,%d",sp->width,sp->height,vp->width,vp->height);
             if (vp->pts >= sp->pts + ((float) sp->sub.start_display_time / 1000)) {
                 if (!sp->uploaded) {
                     uint8_t* pixels[4];
@@ -1316,7 +1316,7 @@ static void sigterm_handler(int sig)
 static void set_default_window_size(int width, int height, AVRational sar)
 {
     SDL_Rect rect;
-    XLOGI("set_default_window_size  %d %d,%d,%d",width,height,sar.den,sar.num);
+    //XLOGI("set_default_window_size  %d %d,%d,%d",width,height,sar.den,sar.num);
     calculate_display_rect(&rect, 0, 0, INT_MAX, height, width, height, sar);
     default_width  = rect.w;
     default_height = rect.h;
@@ -1345,7 +1345,7 @@ static int video_open(VideoState *is)
         else
             flags |= SDL_WINDOW_RESIZABLE;
         window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags);
-        XLOGI("video_open window  %d %d,%d,%d",window->x,window->y,window->w,window->h);
+        //XLOGI("video_open window  %d %d,%d,%d",window->x,window->y,window->w,window->h);
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
         if (window) {
             SDL_RendererInfo info;
@@ -3704,12 +3704,12 @@ int start(int argc, char **argv)
 {
     int flags;
     VideoState *is;
-    XLOGI("start");
+    XLOGI("start 1");
     init_dynload();
-
+    XLOGI("start 2");
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     parse_loglevel(argc, argv, options);
-
+    XLOGI("start 3");
     /* register all codecs, demux and protocols */
 #if CONFIG_AVDEVICE
     avdevice_register_all();
@@ -3719,16 +3719,16 @@ int start(int argc, char **argv)
 #endif
     av_register_all();
     avformat_network_init();
-
+    XLOGI("start 4");
     init_opts();
-
+    XLOGI("start 5");
     signal(SIGINT , sigterm_handler); /* Interrupt (ANSI).    */
     signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
 
     show_banner(argc, argv, options);
 
     parse_options(NULL, argc, argv, options, opt_input_file);
-
+    XLOGI("start 6");
     if (!input_filename) {
         show_usage();
         av_log(NULL, AV_LOG_FATAL, "An input file must be specified\n");
@@ -3756,7 +3756,7 @@ int start(int argc, char **argv)
         av_log(NULL, AV_LOG_FATAL, "(Did you set the DISPLAY variable?)\n");
         exit(1);
     }
-
+    XLOGI("start 7");
     SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
     SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
 
@@ -3764,11 +3764,12 @@ int start(int argc, char **argv)
         av_log(NULL, AV_LOG_FATAL, "Could not initialize lock manager!\n");
         do_exit(NULL);
     }
-
+    XLOGI("start 8");
     av_init_packet(&flush_pkt);
     flush_pkt.data = (uint8_t *)&flush_pkt;
 
     is = stream_open(input_filename, file_iformat);
+    XLOGI("start 9");
     if (!is) {
         av_log(NULL, AV_LOG_FATAL, "Failed to initialize VideoState!\n");
         do_exit(NULL);

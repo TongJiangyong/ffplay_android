@@ -18,7 +18,7 @@ import static org.libsdl.app.SDLActivity.TAG;
     SDL Activity
 */
 public class SDLActivity extends Activity {
-    public static final String TAG = "SDL+TJY";
+    public static final String TAG = "SDL_java_TJY";
 
     public static boolean mIsResumedCalled, mIsSurfaceReady, mHasFocus;
 
@@ -43,28 +43,7 @@ public class SDLActivity extends Activity {
     // This is what SDL runs in. It invokes SDL_main(), eventually
     protected static Thread mSDLThread;
 
-    /**
-     * This method returns the name of the shared object with the application entry point
-     * It can be overridden by derived classes.
-     */
-    protected String getMainSharedObject() {
-        String library;
-        String[] libraries = SDLActivity.mSDLActivity.getLibraries();
-        if (libraries.length > 0) {
-            library = "lib" + libraries[libraries.length - 1] + ".so";
-        } else {
-            library = "libffplay.so";
-        }
-        return library;
-    }
 
-    /**
-     * This method returns the name of the application entry point
-     * It can be overridden by derived classes.
-     */
-    protected String getMainFunction() {
-        return "start";
-    }
 
     /**u
      * This method is called by SDL before loading the native shared libraries.
@@ -93,16 +72,6 @@ public class SDLActivity extends Activity {
        }
     }
 
-    /**
-     * This method is called by SDL before starting the native application thread.
-     * It can be overridden to provide the arguments after the application name.
-     * The default implementation returns an empty array. It never returns null.
-     * @return arguments for the native application.
-     */
-    protected String[] getArguments() {
-        return new String[0];
-    }
-
     public static void initialize() {
         // The static nature of the singleton and Android quirkyness force us to initialize everything here
         // Otherwise, when exiting the app and returning to it, these variables *keep* their pre exit values
@@ -129,6 +98,7 @@ public class SDLActivity extends Activity {
         // Load shared libraries
         String errorMsgBrokenLib = "";
         try {
+            //ZH 加载库
             loadLibraries();
         } catch(UnsatisfiedLinkError e) {
             System.err.println(e.getMessage());
@@ -164,32 +134,24 @@ public class SDLActivity extends Activity {
         }
 
         // Set up JNI
+        //ZH 设置acitvity的环境变量
         SDL.setupJNI();
 
         // Initialize state
+        //ZH 设置java层环境变量
         SDL.initialize();
 
         // So we can call stuff from static callbacks
         mSDLActivity = this;
         SDL.setContext(this);
 
+        //ZH 创建一个render用的view
         // Set up the surface
         mSurface = new SDLSurface(getApplication());
         setContentView(R.layout.activity_main);
         frameLayoutView = (FrameLayout) findViewById(R.id.view_container);
 
         frameLayoutView.addView(mSurface);
-        setWindowStyle(false);
-
-        // Get filename from "Open with" of another application
-        Intent intent = getIntent();
-        if (intent != null && intent.getData() != null) {
-            String filename = intent.getData().getPath();
-            if (filename != null) {
-                Log.d(TAG, "Got filename: " + filename);
-                SDLActivity.onNativeDropFile(filename);
-            }
-        }
     }
 
     // Events
@@ -218,6 +180,7 @@ public class SDLActivity extends Activity {
            return;
         }
 
+        //处理各种状态事件
         SDLActivity.handleNativeState();
     }
 
@@ -335,18 +298,20 @@ public class SDLActivity extends Activity {
         }
 
         // Try a transition to resumed state
+        //ZH 处理resume的状态
         if (mNextNativeState == NativeState.RESUMED) {
             if (mIsSurfaceReady && mHasFocus && mIsResumedCalled) {
                 if (mSDLThread == null) {
                     // This is the entry point to the C app.
                     // Start up the C app thread and enable sensor input for the first time
                     // FIXME: Why aren't we enabling sensor input at start?
-
+                    //ZH 启动SDL main的程序
                     mSDLThread = new Thread(new SDLMain(), "SDLThread");
                     mSDLThread.start();
                 }
-
+                //ZH cpp处理resume相关的信息
                 nativeResume();
+                //ZH view处理resume相关的信息
                 mSurface.handleResume();
                 mCurrentNativeState = mNextNativeState;
             }
@@ -362,7 +327,6 @@ public class SDLActivity extends Activity {
 
     // Messages from the SDLMain thread
     static final int COMMAND_CHANGE_TITLE = 1;
-    static final int COMMAND_CHANGE_WINDOW_STYLE = 2;
     static final int COMMAND_TEXTEDIT_HIDE = 3;
     static final int COMMAND_SET_KEEP_SCREEN_ON = 5;
 
@@ -400,36 +364,6 @@ public class SDLActivity extends Activity {
                 } else {
                     Log.e(TAG, "error handling message, getContext() returned no Activity");
                 }
-                break;
-            case COMMAND_CHANGE_WINDOW_STYLE:
-                if (Build.VERSION.SDK_INT < 19) {
-                    // This version of Android doesn't support the immersive fullscreen mode
-                    break;
-                }
-/* This needs more testing, per bug 4096 - Enabling fullscreen on Android causes the app to toggle fullscreen mode continuously in a loop
- ***
-                if (context instanceof Activity) {
-                    Window window = ((Activity) context).getWindow();
-                    if (window != null) {
-                        if ((msg.obj instanceof Integer) && (((Integer) msg.obj).intValue() != 0)) {
-                            int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-                                        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                                        View.SYSTEM_UI_FLAG_FULLSCREEN |
-                                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
-                            window.getDecorView().setSystemUiVisibility(flags);        
-                            window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                        } else {
-                            int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
-                            window.getDecorView().setSystemUiVisibility(flags);        
-                            window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-                        }
-                    }
-                } else {
-                    Log.e(TAG, "error handling message, getContext() returned no Activity");
-                }
-***/
                 break;
             case COMMAND_SET_KEEP_SCREEN_ON:
             {
@@ -471,7 +405,6 @@ public class SDLActivity extends Activity {
     public static native void nativeQuit();
     public static native void nativePause();
     public static native void nativeResume();
-    public static native void onNativeDropFile(String filename);
     public static native void onNativeResize(int x, int y, int format, float rate);
     public static native void onNativeSurfaceChanged();
     public static native void onNativeSurfaceDestroyed();
@@ -482,26 +415,6 @@ public class SDLActivity extends Activity {
     public static boolean setActivityTitle(String title) {
         // Called from SDLMain() thread and can't directly affect the view
         return mSDLActivity.sendCommand(COMMAND_CHANGE_TITLE, title);
-    }
-
-    /**
-     * This method is called by SDL using JNI.
-     */
-    public static void setWindowStyle(boolean fullscreen) {
-        // Called from SDLMain() thread and can't directly affect the view
-        mSDLActivity.sendCommand(COMMAND_CHANGE_WINDOW_STYLE, fullscreen ? 1 : 0);
-    }
-
-    /**
-     * This method is called by SDL using JNI.
-     * This is a static method for JNI convenience, it calls a non-static method
-     * so that is can be overridden  
-     */
-    public static void setOrientation(int w, int h, boolean resizable, String hint)
-    {
-        if (mSDLActivity != null) {
-            mSDLActivity.setOrientationBis(w, h, resizable, hint);
-        }
     }
    
     /**
@@ -588,11 +501,15 @@ class SDLMain implements Runnable {
     @Override
     public void run() {
         // Runs SDL_main()
-        String library = SDLActivity.mSDLActivity.getMainSharedObject();
-        String function = SDLActivity.mSDLActivity.getMainFunction();
-        String[] arguments = SDLActivity.mSDLActivity.getArguments();
+        //ZH thread 的进入是在view创建之后....
+        String library = "libffplay.so";
+        //ZH 这里设置的native的函数的开始名称
+        String function = "start";
+        //这里可以设置传入native的参数
+        String[] arguments = new String[0];
 
         Log.d(TAG, "Running main function " + function + " from library " + library);
+
         SDLActivity.nativeRunMain(library, function, arguments);
 
         Log.d(TAG, "Finished main function");
@@ -648,6 +565,8 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback{
     }
 
     public Surface getNativeSurface() {
+        //ZH 线程启动后可以用
+        Log.d(TAG, "getNativeSurface");
         return getHolder().getSurface();
     }
 
@@ -655,7 +574,6 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback{
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         Log.d(TAG, "surfaceCreated()");
-        holder.setType(SurfaceHolder.SURFACE_TYPE_GPU);
     }
 
     // Called when we lose the surface

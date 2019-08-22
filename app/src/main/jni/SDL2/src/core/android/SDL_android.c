@@ -46,7 +46,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dlfcn.h>
-#define LOG_TAG "SDL_android"
+#define LOG_TAG "SDL_android_TJY"
 #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 //#define LOGI(...) do {} while (0)
@@ -69,10 +69,6 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(
         JNIEnv* env, jclass cls,
         jstring library, jstring function, jobject array);
 
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeDropFile)(
-        JNIEnv* env, jclass jcls,
-        jstring filename);
-
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeResize)(
         JNIEnv* env, jclass jcls,
         jint width, jint height, jint format, jfloat rate);
@@ -82,10 +78,6 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeSurfaceChanged)(
 
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeSurfaceDestroyed)(
         JNIEnv* env, jclass jcls);
-
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeAccel)(
-        JNIEnv* env, jclass jcls,
-        jfloat x, jfloat y, jfloat z);
 
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeClipboardChanged)(
         JNIEnv* env, jclass jcls);
@@ -142,8 +134,6 @@ static jclass mActivityClass;
 /* method signatures */
 static jmethodID midGetNativeSurface;
 static jmethodID midSetActivityTitle;
-static jmethodID midSetWindowStyle;
-static jmethodID midSetOrientation;
 static jmethodID midGetContext;
 static jmethodID midIsAndroidTV;
 static jmethodID midGetDisplayDPI;
@@ -161,10 +151,6 @@ static jmethodID midCaptureReadShortBuffer;
 static jmethodID midCaptureReadByteBuffer;
 static jmethodID midCaptureClose;
 
-
-/* Accelerometer data storage */
-static float fLastAccelerometer[3];
-static SDL_bool bHasNewData;
 
 
 /*******************************************************************************
@@ -216,10 +202,6 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetupJNI)(JNIEnv* mEnv, jclass c
                                 "getNativeSurface","()Landroid/view/Surface;");
     midSetActivityTitle = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
                                 "setActivityTitle","(Ljava/lang/String;)Z");
-    midSetWindowStyle = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "setWindowStyle","(Z)V");
-    midSetOrientation = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
-                                "setOrientation","(IIZLjava/lang/String;)V");
     midGetContext = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
                                 "getContext","()Landroid/content/Context;");
     midIsAndroidTV = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass,
@@ -227,7 +209,7 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetupJNI)(JNIEnv* mEnv, jclass c
     midGetDisplayDPI = (*mEnv)->GetStaticMethodID(mEnv, mActivityClass, "getDisplayDPI", "()Landroid/util/DisplayMetrics;");
 
     if (!midGetNativeSurface ||
-       !midSetActivityTitle || !midSetWindowStyle || !midSetOrientation || !midGetContext || !midIsAndroidTV ||
+       !midSetActivityTitle || !midGetContext || !midIsAndroidTV ||
        !midGetDisplayDPI) {
         __android_log_print(ANDROID_LOG_WARN, "SDL", "Missing some Java callbacks, do you have the latest version of SDLActivity.java?");
     }
@@ -274,6 +256,8 @@ JNIEXPORT void JNICALL SDL_JAVA_AUDIO_INTERFACE(nativeSetupJNI)(JNIEnv* mEnv, jc
 typedef int (*SDL_main_func)(int argc, char *argv[]);
 
 /* Start up the SDL app */
+//ZH 这里是android的入口，从c++到java的部分
+//ZH 发送事件的函数 Android_OnKeyUp SDL_SendKeyboardKey 即 可以通过这个函数来给事件信息.....
 JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv* env, jclass cls, jstring library, jstring function, jobject array)
 {
     int status = -1;
@@ -281,7 +265,7 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv* env, jclass cls,
     void *library_handle;
 
     __android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeRunMain()");
-
+    LOGI("nativeRunMain %s ,%s",(*env)->GetStringUTFChars(env, library, NULL),(*env)->GetStringUTFChars(env, function, NULL));
     library_file = (*env)->GetStringUTFChars(env, library, NULL);
     library_handle = dlopen(library_file, RTLD_GLOBAL);
     if (library_handle) {
@@ -289,6 +273,7 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv* env, jclass cls,
         SDL_main_func SDL_main;
 
         function_name = (*env)->GetStringUTFChars(env, function, NULL);
+        //ZH 这里直接加载库，然后使用这个函数.....
         SDL_main = (SDL_main_func)dlsym(library_handle, function_name);
         if (SDL_main) {
             int i;
@@ -303,7 +288,9 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv* env, jclass cls,
             /* Use the name "app_process" so PHYSFS_platformCalcBaseDir() works.
                https://bitbucket.org/MartinFelis/love-android-sdl2/issue/23/release-build-crash-on-start
              */
+            //拷贝字符串，并分配指针
             argv[argc++] = SDL_strdup("app_process");
+
             for (i = 0; i < len; ++i) {
                 const char* utf;
                 char* arg = NULL;
@@ -320,10 +307,11 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv* env, jclass cls,
                     arg = SDL_strdup("");
                 }
                 argv[argc++] = arg;
+                LOGI("nativeRunMain into ffplay arg %s",arg);
             }
             argv[argc] = NULL;
 
-
+            LOGI("nativeRunMain into ffplay len:%d  argc:%d",len,argc);
             /* Run the application. */
             status = SDL_main(argc, argv);
 
@@ -339,7 +327,7 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv* env, jclass cls,
         (*env)->ReleaseStringUTFChars(env, function, function_name);
 
         dlclose(library_handle);
-
+        LOGI("nativeRunMain into dlclose");
     } else {
         __android_log_print(ANDROID_LOG_ERROR, "SDL", "nativeRunMain(): Couldn't load library %s", library_file);
     }
@@ -349,17 +337,6 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv* env, jclass cls,
     /* exit(status); */
 
     return status;
-}
-
-/* Drop file */
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeDropFile)(
-                                    JNIEnv* env, jclass jcls,
-                                    jstring filename)
-{
-    const char *path = (*env)->GetStringUTFChars(env, filename, NULL);
-    SDL_SendDropFile(NULL, path);
-    (*env)->ReleaseStringUTFChars(env, filename, path);
-    SDL_SendDropComplete(NULL);
 }
 
 /* Resize */
@@ -424,17 +401,6 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeSurfaceDestroyed)(JNIEnv* env,
 
 }
 
-/* Accelerometer */
-JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeAccel)(
-                                    JNIEnv* env, jclass jcls,
-                                    jfloat x, jfloat y, jfloat z)
-{
-    fLastAccelerometer[0] = x;
-    fLastAccelerometer[1] = y;
-    fLastAccelerometer[2] = z;
-    bHasNewData = SDL_TRUE;
-}
-
 /* Clipboard */
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeClipboardChanged)(
                                     JNIEnv* env, jclass jcls)
@@ -488,10 +454,13 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeResume)(
                                     JNIEnv* env, jclass cls)
 {
     __android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeResume()");
-
+    LOGI("resume 1");
     if (Android_Window) {
+        LOGI("resume 2");
+        //ZH 只有当第二次进入回到这里
         SDL_SendAppEvent(SDL_APP_WILLENTERFOREGROUND);
         SDL_SendAppEvent(SDL_APP_DIDENTERFOREGROUND);
+        //ZH 看上去只有这两行有效
         SDL_SendWindowEvent(Android_Window, SDL_WINDOWEVENT_FOCUS_GAINED, 0, 0);
         SDL_SendWindowEvent(Android_Window, SDL_WINDOWEVENT_RESTORED, 0, 0);
         /* Signal the resume semaphore so the event loop knows to resume and restore the GL Context
@@ -605,33 +574,17 @@ void Android_JNI_SetActivityTitle(const char *title)
 
 void Android_JNI_SetWindowStyle(SDL_bool fullscreen)
 {
-    JNIEnv *mEnv = Android_JNI_GetEnv();
-    (*mEnv)->CallStaticVoidMethod(mEnv, mActivityClass, midSetWindowStyle, fullscreen ? 1 : 0);
+    LOGI("Android_JNI_SetWindowStyle %d",fullscreen);
 }
 
 void Android_JNI_SetOrientation(int w, int h, int resizable, const char *hint)
 {
-    JNIEnv *mEnv = Android_JNI_GetEnv();
-
-    jstring jhint = (jstring)((*mEnv)->NewStringUTF(mEnv, (hint ? hint : "")));
-    (*mEnv)->CallStaticVoidMethod(mEnv, mActivityClass, midSetOrientation, w, h, (resizable? 1 : 0), jhint);
-    (*mEnv)->DeleteLocalRef(mEnv, jhint);
+    LOGI("Android_JNI_SetOrientation %d,%d,%d,%s",w,h,resizable,hint);
 }
 
 SDL_bool Android_JNI_GetAccelerometerValues(float values[3])
 {
-    int i;
-    SDL_bool retval = SDL_FALSE;
-
-    if (bHasNewData) {
-        for (i = 0; i < 3; ++i) {
-            values[i] = fLastAccelerometer[i];
-        }
-        bHasNewData = SDL_FALSE;
-        retval = SDL_TRUE;
-    }
-
-    return retval;
+    return SDL_FALSE;
 }
 
 static void Android_JNI_ThreadDestroyed(void* value)
