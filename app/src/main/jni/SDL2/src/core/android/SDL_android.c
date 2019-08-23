@@ -58,14 +58,16 @@
 #define CONCAT2(prefix, class, function)                Java_ ## prefix ## _ ## class ## _ ## function
 #define SDL_JAVA_INTERFACE(function)                    CONCAT1(SDL_JAVA_PREFIX, SDLActivity, function)
 #define SDL_JAVA_AUDIO_INTERFACE(function)              CONCAT1(SDL_JAVA_PREFIX, SDLAudioManager, function)
-#define SDL_JAVA_INTERFACE_INPUT_CONNECTION(function)   CONCAT1(SDL_JAVA_PREFIX, SDLInputConnection, function)
 
 
 /* Java class SDLActivity */
 JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetupJNI)(
         JNIEnv* mEnv, jclass cls);
 
-JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(
+JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetSurface)(
+        JNIEnv* mEnv, jclass cls,jobject surface);
+
+JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMai)(
         JNIEnv* env, jclass cls,
         jstring library, jstring function, jobject array);
 
@@ -258,7 +260,7 @@ typedef int (*SDL_main_func)(int argc, char *argv[]);
 /* Start up the SDL app */
 //ZH 这里是android的入口，从c++到java的部分
 //ZH 发送事件的函数 Android_OnKeyUp SDL_SendKeyboardKey 即 可以通过这个函数来给事件信息.....
-JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv* env, jclass cls, jstring library, jstring function, jobject array)
+JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMai)(JNIEnv* env, jclass cls, jstring library, jstring function, jobject array)
 {
     int status = -1;
     const char *library_file;
@@ -499,6 +501,15 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetenv)(
 
 }
 
+ANativeWindow* anw = NULL;
+JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetSurface)(
+        JNIEnv* env, jclass cls,jobject surface){
+    anw = ANativeWindow_fromSurface(env, surface);
+    LOGI("nativeSetSurface %p",anw);
+}
+
+
+
 /*******************************************************************************
              Functions called by SDL into Java
 *******************************************************************************/
@@ -552,14 +563,14 @@ static SDL_bool LocalReferenceHolder_IsActive(void)
 
 ANativeWindow* Android_JNI_GetNativeWindow(void)
 {
-    ANativeWindow* anw;
-    jobject s;
-    JNIEnv *env = Android_JNI_GetEnv();
-
-    s = (*env)->CallStaticObjectMethod(env, mActivityClass, midGetNativeSurface);
-    anw = ANativeWindow_fromSurface(env, s);
-    (*env)->DeleteLocalRef(env, s);
-
+//    ANativeWindow* anw;
+//    jobject s;
+//    JNIEnv *env = Android_JNI_GetEnv();
+//
+//    s = (*env)->CallStaticObjectMethod(env, mActivityClass, midGetNativeSurface);
+//    anw = ANativeWindow_fromSurface(env, s);
+//    (*env)->DeleteLocalRef(env, s);
+    LOGI("Android_JNI_GetNativeWindow %p",anw);
     return anw;
 }
 
@@ -1680,6 +1691,7 @@ void Android_JNI_GetManifestEnvironmentVariables(void)
 {
     LOGI("Android_JNI_GetManifestEnvironmentVariables");
 }
+
 
 #endif /* __ANDROID__ */
 

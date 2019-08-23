@@ -13,10 +13,11 @@ import android.hardware.*;
 import android.content.pm.ActivityInfo;
 
 import static org.libsdl.app.SDLActivity.TAG;
+import static org.libsdl.app.SDLActivity.nativeSetSurface;
 
 /**
-    SDL Activity
-*/
+ * SDL Activity
+ */
 public class SDLActivity extends Activity {
     public static final String TAG = "SDL_java_TJY";
 
@@ -24,52 +25,57 @@ public class SDLActivity extends Activity {
 
     // Handle the state of the native layer
     public enum NativeState {
-           INIT, RESUMED, PAUSED
+        INIT, RESUMED, PAUSED
     }
+
     public static FrameLayout frameLayoutView;
+    public static FrameLayout frameLayoutView2;
     public static NativeState mNextNativeState;
     public static NativeState mCurrentNativeState;
 
     public static boolean mExitCalledFromJava;
 
-    /** If shared libraries (e.g. SDL or the native application) could not be loaded. */
+    /**
+     * If shared libraries (e.g. SDL or the native application) could not be loaded.
+     */
     public static boolean mBrokenLibraries;
 
     // Main components
     protected static SDLActivity mSDLActivity;
     protected static SDLSurface mSurface;
-
-
+    protected static SDLSurface mSurface2;
     // This is what SDL runs in. It invokes SDL_main(), eventually
     protected static Thread mSDLThread;
+    protected static Thread mSDLThread2;
 
 
-
-    /**u
+    /**
+     * u
      * This method is called by SDL before loading the native shared libraries.
      * It can be overridden to provide names of shared libraries to be loaded.
      * The default implementation returns the defaults. It never returns null.
      * An array returned by a new implementation must at least contain "SDL2".
      * Also keep in mind that the order the libraries are loaded may matter.
+     *
      * @return names of shared libraries to be loaded (e.g. "SDL2", "main").
      */
     protected String[] getLibraries() {
-        return new String[] {
-            "SDL2",
-            // "SDL2_image",
-            // "SDL2_mixer",
-            // "SDL2_net",
-            // "SDL2_ttf",
-            //"ffmpeg",
-            "ffplay"
+        return new String[]{
+                "SDL2",
+                // "SDL2_image",
+                // "SDL2_mixer",
+                // "SDL2_net",
+                // "SDL2_ttf",
+                //"ffmpeg",
+                "ffplay"
         };
     }
 
     // Load the .so
     public void loadLibraries() {
-       for (String lib : getLibraries()) {
-          System.loadLibrary(lib);
-       }
+        for (String lib : getLibraries()) {
+            System.loadLibrary(lib);
+        }
     }
 
     public static void initialize() {
@@ -100,37 +106,36 @@ public class SDLActivity extends Activity {
         try {
             //ZH 加载库
             loadLibraries();
-        } catch(UnsatisfiedLinkError e) {
+        } catch (UnsatisfiedLinkError e) {
             System.err.println(e.getMessage());
             mBrokenLibraries = true;
             errorMsgBrokenLib = e.getMessage();
-        } catch(Exception e) {
+        } catch (Exception e) {
             System.err.println(e.getMessage());
             mBrokenLibraries = true;
             errorMsgBrokenLib = e.getMessage();
         }
 
-        if (mBrokenLibraries)
-        {
+        if (mBrokenLibraries) {
             mSDLActivity = this;
-            AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
+            AlertDialog.Builder dlgAlert = new AlertDialog.Builder(this);
             dlgAlert.setMessage("An error occurred while trying to start the application. Please try again and/or reinstall."
-                  + System.getProperty("line.separator")
-                  + System.getProperty("line.separator")
-                  + "Error: " + errorMsgBrokenLib);
+                    + System.getProperty("line.separator")
+                    + System.getProperty("line.separator")
+                    + "Error: " + errorMsgBrokenLib);
             dlgAlert.setTitle("SDL Error");
             dlgAlert.setPositiveButton("Exit",
-                new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog,int id) {
-                        // if this button is clicked, close current activity
-                        SDLActivity.mSDLActivity.finish();
-                    }
-                });
-           dlgAlert.setCancelable(false);
-           dlgAlert.create().show();
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int id) {
+                            // if this button is clicked, close current activity
+                            SDLActivity.mSDLActivity.finish();
+                        }
+                    });
+            dlgAlert.setCancelable(false);
+            dlgAlert.create().show();
 
-           return;
+            return;
         }
 
         // Set up JNI
@@ -148,10 +153,12 @@ public class SDLActivity extends Activity {
         //ZH 创建一个render用的view
         // Set up the surface
         mSurface = new SDLSurface(getApplication());
+        mSurface2 = new SDLSurface(getApplication());
         setContentView(R.layout.activity_main);
         frameLayoutView = (FrameLayout) findViewById(R.id.view_container);
-
+        frameLayoutView2 = (FrameLayout) findViewById(R.id.view_container_2);
         frameLayoutView.addView(mSurface);
+        frameLayoutView2.addView(mSurface2);
     }
 
     // Events
@@ -163,7 +170,7 @@ public class SDLActivity extends Activity {
         mIsResumedCalled = false;
 
         if (SDLActivity.mBrokenLibraries) {
-           return;
+            return;
         }
 
         SDLActivity.handleNativeState();
@@ -177,7 +184,7 @@ public class SDLActivity extends Activity {
         mIsResumedCalled = true;
 
         if (SDLActivity.mBrokenLibraries) {
-           return;
+            return;
         }
 
         //处理各种状态事件
@@ -191,14 +198,14 @@ public class SDLActivity extends Activity {
         Log.d(TAG, "onWindowFocusChanged(): " + hasFocus);
 
         if (SDLActivity.mBrokenLibraries) {
-           return;
+            return;
         }
 
         SDLActivity.mHasFocus = hasFocus;
         if (hasFocus) {
-           mNextNativeState = NativeState.RESUMED;
+            mNextNativeState = NativeState.RESUMED;
         } else {
-           mNextNativeState = NativeState.PAUSED;
+            mNextNativeState = NativeState.PAUSED;
         }
 
         SDLActivity.handleNativeState();
@@ -210,7 +217,7 @@ public class SDLActivity extends Activity {
         super.onLowMemory();
 
         if (SDLActivity.mBrokenLibraries) {
-           return;
+            return;
         }
 
         SDLActivity.nativeLowMemory();
@@ -221,10 +228,10 @@ public class SDLActivity extends Activity {
         Log.d(TAG, "onDestroy()");
 
         if (SDLActivity.mBrokenLibraries) {
-           super.onDestroy();
-           // Reset everything in case the user re opens the app
-           SDLActivity.initialize();
-           return;
+            super.onDestroy();
+            // Reset everything in case the user re opens the app
+            SDLActivity.initialize();
+            return;
         }
 
         mNextNativeState = NativeState.PAUSED;
@@ -238,7 +245,7 @@ public class SDLActivity extends Activity {
         if (SDLActivity.mSDLThread != null) {
             try {
                 SDLActivity.mSDLThread.join();
-            } catch(Exception e) {
+            } catch (Exception e) {
                 Log.d(TAG, "Problem stopping thread: " + e);
             }
             SDLActivity.mSDLThread = null;
@@ -302,17 +309,22 @@ public class SDLActivity extends Activity {
         if (mNextNativeState == NativeState.RESUMED) {
             if (mIsSurfaceReady && mHasFocus && mIsResumedCalled) {
                 if (mSDLThread == null) {
-                    // This is the entry point to the C app.
-                    // Start up the C app thread and enable sensor input for the first time
-                    // FIXME: Why aren't we enabling sensor input at start?
-                    //ZH 启动SDL main的程序
-                    mSDLThread = new Thread(new SDLMain(), "SDLThread");
+                    mSDLThread = new Thread(new SDLMain(1), "SDLThread");
                     mSDLThread.start();
                 }
+
+//                if (mSDLThread2 == null) {
+//                    // This is the entry point to the C app.
+//                    // Start up the C app thread and enable sensor input for the first time
+//                    // FIXME: Why aren't we enabling sensor input at start?
+//                    //ZH 启动SDL main的程序
+//                    mSDLThread2 = new Thread(new SDLMain(2), "SDLThread2");
+//                    mSDLThread2.start();
+//                }
                 //ZH cpp处理resume相关的信息
                 nativeResume();
                 //ZH view处理resume相关的信息
-                mSurface.handleResume();
+                //mSurface.handleResume();
                 mCurrentNativeState = mNextNativeState;
             }
         }
@@ -336,8 +348,9 @@ public class SDLActivity extends Activity {
      * This method is called by SDL if SDL did not handle a message itself.
      * This happens if a received message contains an unsupported command.
      * Method can be overwritten to handle Messages in a different class.
+     *
      * @param command the command of the message.
-     * @param param the parameter of the message. May be null.
+     * @param param   the parameter of the message. May be null.
      * @return if the message was handled in overridden method.
      */
     protected boolean onUnhandledMessage(int command, Object param) {
@@ -358,31 +371,30 @@ public class SDLActivity extends Activity {
                 return;
             }
             switch (msg.arg1) {
-            case COMMAND_CHANGE_TITLE:
-                if (context instanceof Activity) {
-                    ((Activity) context).setTitle((String)msg.obj);
-                } else {
-                    Log.e(TAG, "error handling message, getContext() returned no Activity");
-                }
-                break;
-            case COMMAND_SET_KEEP_SCREEN_ON:
-            {
-                if (context instanceof Activity) {
-                    Window window = ((Activity) context).getWindow();
-                    if (window != null) {
-                        if ((msg.obj instanceof Integer) && (((Integer) msg.obj).intValue() != 0)) {
-                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                        } else {
-                            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                case COMMAND_CHANGE_TITLE:
+                    if (context instanceof Activity) {
+                        ((Activity) context).setTitle((String) msg.obj);
+                    } else {
+                        Log.e(TAG, "error handling message, getContext() returned no Activity");
+                    }
+                    break;
+                case COMMAND_SET_KEEP_SCREEN_ON: {
+                    if (context instanceof Activity) {
+                        Window window = ((Activity) context).getWindow();
+                        if (window != null) {
+                            if ((msg.obj instanceof Integer) && (((Integer) msg.obj).intValue() != 0)) {
+                                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                            } else {
+                                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                            }
                         }
                     }
+                    break;
                 }
-                break;
-            }
-            default:
-                if ((context instanceof SDLActivity) && !((SDLActivity) context).onUnhandledMessage(msg.arg1, msg.obj)) {
-                    Log.e(TAG, "error handling message, command is " + msg.arg1);
-                }
+                default:
+                    if ((context instanceof SDLActivity) && !((SDLActivity) context).onUnhandledMessage(msg.arg1, msg.obj)) {
+                        Log.e(TAG, "error handling message, command is " + msg.arg1);
+                    }
             }
         }
     }
@@ -400,14 +412,24 @@ public class SDLActivity extends Activity {
 
     // C functions we call
     public static native int nativeSetupJNI();
+
     public static native int nativeRunMain(String library, String function, Object arguments);
+
     public static native void nativeLowMemory();
+
     public static native void nativeQuit();
+
     public static native void nativePause();
+
     public static native void nativeResume();
+
     public static native void onNativeResize(int x, int y, int format, float rate);
+
     public static native void onNativeSurfaceChanged();
+
     public static native void onNativeSurfaceDestroyed();
+
+    public static native void nativeSetSurface(Surface surface);
 
     /**
      * This method is called by SDL using JNI.
@@ -416,12 +438,11 @@ public class SDLActivity extends Activity {
         // Called from SDLMain() thread and can't directly affect the view
         return mSDLActivity.sendCommand(COMMAND_CHANGE_TITLE, title);
     }
-   
+
     /**
      * This can be overridden
      */
-    public void setOrientationBis(int w, int h, boolean resizable, String hint) 
-    {
+    public void setOrientationBis(int w, int h, boolean resizable, String hint) {
         int orientation = -1;
 
         if (hint.contains("LandscapeRight") && hint.contains("LandscapeLeft")) {
@@ -451,7 +472,7 @@ public class SDLActivity extends Activity {
             }
         }
 
-        Log.d(TAG, "setOrientation() orientation=" + orientation + " width=" + w +" height="+ h +" resizable=" + resizable + " hint=" + hint);
+        Log.d(TAG, "setOrientation() orientation=" + orientation + " width=" + w + " height=" + h + " resizable=" + resizable + " hint=" + hint);
         if (orientation != -1) {
             mSDLActivity.setRequestedOrientation(orientation);
         }
@@ -495,45 +516,74 @@ public class SDLActivity extends Activity {
 }
 
 /**
-    Simple runnable to start the SDL application
-*/
+ * Simple runnable to start the SDL application
+ */
 class SDLMain implements Runnable {
+    private int identifyNum = 0;
+
+    public SDLMain(int num) {
+        this.identifyNum = num;
+    }
+
     @Override
     public void run() {
-        // Runs SDL_main()
-        //ZH thread 的进入是在view创建之后....
-        String library = "libffplay.so";
-        //ZH 这里设置的native的函数的开始名称
-        String function = "start";
-        //这里可以设置传入native的参数
-        String[] arguments = new String[0];
 
-        Log.d(TAG, "Running main function " + function + " from library " + library);
+            // Runs SDL_main()
+            //ZH thread 的进入是在view创建之后....
+            String library = "libffplay.so";
+            //ZH 这里设置的native的函数的开始名称
+            String function = "start";
+            //这里可以设置传入native的参数
+            String[] arguments = new String[0];
 
+            Log.d(TAG, "Running main function " + function + " from library " + library);
+            //这里要放在native run之前...不然不好搞...
+            while(!SDLActivity.mSurface2.isCreated){
+
+            };
+            while(!SDLActivity.mSurface.isCreated){
+
+            };
+            Log.d(TAG, "nativeSetSurface " + SDLActivity.mSurface2.getHolder());
+        //if (this.identifyNum == 1) {
+            nativeSetSurface(SDLActivity.mSurface.getNativeSurface());
+            //SDLActivity.nativeRunMain(library, function, arguments);
+            //SDLActivity.nativeRunMain(library, function, arguments);
+        //}
+/*        if (this.identifyNum == 4) {
+            nativeSetSurface(SDLActivity.mSurface2.getNativeSurface());
+
+        }*/
         SDLActivity.nativeRunMain(library, function, arguments);
 
-        Log.d(TAG, "Finished main function");
 
-        // Native thread has finished, let's finish the Activity
-        if (!SDLActivity.mExitCalledFromJava) {
-            SDLActivity.handleNativeExit();
-        }
+
+            Log.d(TAG, "nativeRunMain");
+
+
+            Log.d(TAG, "Finished main function");
+
+            // Native thread has finished, let's finish the Activity
+            if (!SDLActivity.mExitCalledFromJava) {
+                Log.d(TAG, "handleNativeExit");
+                //SDLActivity.handleNativeExit();
+            }
     }
 }
 
 
 /**
-    SDLSurface. This is what we draw on, so we need to know when it's created
-    in order to do anything useful.
-
-    Because of this, that's where we set up the SDL thread
-*/
-class SDLSurface extends SurfaceView implements SurfaceHolder.Callback{
+ * SDLSurface. This is what we draw on, so we need to know when it's created
+ * in order to do anything useful.
+ * <p>
+ * Because of this, that's where we set up the SDL thread
+ */
+class SDLSurface extends SurfaceView implements SurfaceHolder.Callback {
 
     // Sensors
     protected static SensorManager mSensorManager;
     protected static Display mDisplay;
-
+    public boolean isCreated = false;
     // Keep track of the surface size to normalize touch events
     protected static float mWidth, mHeight;
 
@@ -546,8 +596,8 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback{
         setFocusableInTouchMode(true);
         requestFocus();
 
-        mDisplay = ((WindowManager)context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-        mSensorManager = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+        mDisplay = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+        mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
 
 
         // Some arbitrary defaults to avoid a potential division by zero
@@ -573,7 +623,8 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback{
     // Called when we have a valid drawing surface
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        Log.d(TAG, "surfaceCreated()");
+        Log.d(TAG, "surfaceCreated() " +holder);
+        isCreated = true;
     }
 
     // Called when we lose the surface
@@ -597,47 +648,47 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback{
 
         int sdlFormat = 0x15151002; // SDL_PIXELFORMAT_RGB565 by default
         switch (format) {
-        case PixelFormat.A_8:
-            Log.d(TAG, "pixel format A_8");
-            break;
-        case PixelFormat.LA_88:
-            Log.d(TAG, "pixel format LA_88");
-            break;
-        case PixelFormat.L_8:
-            Log.d(TAG, "pixel format L_8");
-            break;
-        case PixelFormat.RGBA_4444:
-            Log.d(TAG, "pixel format RGBA_4444");
-            sdlFormat = 0x15421002; // SDL_PIXELFORMAT_RGBA4444
-            break;
-        case PixelFormat.RGBA_5551:
-            Log.d(TAG, "pixel format RGBA_5551");
-            sdlFormat = 0x15441002; // SDL_PIXELFORMAT_RGBA5551
-            break;
-        case PixelFormat.RGBA_8888:
-            Log.d(TAG, "pixel format RGBA_8888");
-            sdlFormat = 0x16462004; // SDL_PIXELFORMAT_RGBA8888
-            break;
-        case PixelFormat.RGBX_8888:
-            Log.d(TAG, "pixel format RGBX_8888");
-            sdlFormat = 0x16261804; // SDL_PIXELFORMAT_RGBX8888
-            break;
-        case PixelFormat.RGB_332:
-            Log.d(TAG, "pixel format RGB_332");
-            sdlFormat = 0x14110801; // SDL_PIXELFORMAT_RGB332
-            break;
-        case PixelFormat.RGB_565:
-            Log.d(TAG, "pixel format RGB_565");
-            sdlFormat = 0x15151002; // SDL_PIXELFORMAT_RGB565
-            break;
-        case PixelFormat.RGB_888:
-            Log.d(TAG, "pixel format RGB_888");
-            // Not sure this is right, maybe SDL_PIXELFORMAT_RGB24 instead?
-            sdlFormat = 0x16161804; // SDL_PIXELFORMAT_RGB888
-            break;
-        default:
-            Log.d(TAG, "pixel format unknown " + format);
-            break;
+            case PixelFormat.A_8:
+                Log.d(TAG, "pixel format A_8");
+                break;
+            case PixelFormat.LA_88:
+                Log.d(TAG, "pixel format LA_88");
+                break;
+            case PixelFormat.L_8:
+                Log.d(TAG, "pixel format L_8");
+                break;
+            case PixelFormat.RGBA_4444:
+                Log.d(TAG, "pixel format RGBA_4444");
+                sdlFormat = 0x15421002; // SDL_PIXELFORMAT_RGBA4444
+                break;
+            case PixelFormat.RGBA_5551:
+                Log.d(TAG, "pixel format RGBA_5551");
+                sdlFormat = 0x15441002; // SDL_PIXELFORMAT_RGBA5551
+                break;
+            case PixelFormat.RGBA_8888:
+                Log.d(TAG, "pixel format RGBA_8888");
+                sdlFormat = 0x16462004; // SDL_PIXELFORMAT_RGBA8888
+                break;
+            case PixelFormat.RGBX_8888:
+                Log.d(TAG, "pixel format RGBX_8888");
+                sdlFormat = 0x16261804; // SDL_PIXELFORMAT_RGBX8888
+                break;
+            case PixelFormat.RGB_332:
+                Log.d(TAG, "pixel format RGB_332");
+                sdlFormat = 0x14110801; // SDL_PIXELFORMAT_RGB332
+                break;
+            case PixelFormat.RGB_565:
+                Log.d(TAG, "pixel format RGB_565");
+                sdlFormat = 0x15151002; // SDL_PIXELFORMAT_RGB565
+                break;
+            case PixelFormat.RGB_888:
+                Log.d(TAG, "pixel format RGB_888");
+                // Not sure this is right, maybe SDL_PIXELFORMAT_RGB24 instead?
+                sdlFormat = 0x16161804; // SDL_PIXELFORMAT_RGB888
+                break;
+            default:
+                Log.d(TAG, "pixel format unknown " + format);
+                break;
         }
 
         mWidth = width;
@@ -649,36 +700,33 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback{
         boolean skip = false;
         int requestedOrientation = SDLActivity.mSDLActivity.getRequestedOrientation();
 
-        if (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
-        {
+        if (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
             // Accept any
-        }
-        else if (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT || requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT)
-        {
+        } else if (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT || requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT) {
             if (mWidth > mHeight) {
-               skip = true;
+                skip = true;
             }
         } else if (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE || requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE) {
             if (mWidth < mHeight) {
-               skip = true;
+                skip = true;
             }
         }
 
         // Special Patch for Square Resolution: Black Berry Passport
         if (skip) {
-           double min = Math.min(mWidth, mHeight);
-           double max = Math.max(mWidth, mHeight);
+            double min = Math.min(mWidth, mHeight);
+            double max = Math.max(mWidth, mHeight);
 
-           if (max / min < 1.20) {
-              Log.d(TAG, "Don't skip on such aspect-ratio. Could be a square resolution.");
-              skip = false;
-           }
+            if (max / min < 1.20) {
+                Log.d(TAG, "Don't skip on such aspect-ratio. Could be a square resolution.");
+                skip = false;
+            }
         }
 
         if (skip) {
-           Log.d(TAG, "Skip .. Surface is not ready.");
-           SDLActivity.mIsSurfaceReady = false;
-           return;
+            Log.d(TAG, "Skip .. Surface is not ready.");
+            SDLActivity.mIsSurfaceReady = false;
+            return;
         }
 
         /* Surface is ready */

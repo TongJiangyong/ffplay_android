@@ -23,6 +23,7 @@
  * simple media player based on the FFmpeg libraries
  */
 
+//TODO 将整个ffplay定义为一个类来处理！！！！
 #include "config.h"
 #include <inttypes.h>
 #include <math.h>
@@ -1345,7 +1346,7 @@ static int video_open(VideoState *is)
         else
             flags |= SDL_WINDOW_RESIZABLE;
         window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags);
-        //XLOGI("video_open window  %d %d,%d,%d",window->x,window->y,window->w,window->h);
+        XLOGI("video_open window  %d %d,%d,%d",window->x,window->y,window->w,window->h);
         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
         if (window) {
             SDL_RendererInfo info;
@@ -2759,6 +2760,7 @@ static int is_realtime(AVFormatContext *s)
 }
 
 /* this thread gets the stream from the disk or the network */
+//thread start
 static int read_thread(void *arg)
 {
     VideoState *is = arg;
@@ -3787,4 +3789,72 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
     XLOGI("JNIEXPORT av_jni_set_java_vm");
     av_jni_set_java_vm(vm, reserved);
     return JNI_VERSION_1_4;
+}
+
+
+
+
+JNIEXPORT int JNICALL Java_org_libsdl_app_SDLActivity_nativeRunMain(JNIEnv* env, jclass cls, jstring library, jstring function, jobject array)
+{
+    int status = -1;
+    const char *library_file;
+    void *library_handle;
+
+    XLOGI("nativeRunMain()");
+    XLOGI("nativeRunMain %s ,%s",(*env)->GetStringUTFChars(env, library, NULL),(*env)->GetStringUTFChars(env, function, NULL));
+    library_file = (*env)->GetStringUTFChars(env, library, NULL);
+    const char *function_name;
+    if (SDL_main) {
+        int i;
+        int argc;
+        int len;
+        char **argv;
+
+        /* Prepare the arguments. */
+        len = (*env)->GetArrayLength(env, array);
+        argv = SDL_stack_alloc(char*, 1 + len + 1);
+        argc = 0;
+        /* Use the name "app_process" so PHYSFS_platformCalcBaseDir() works.
+           https://bitbucket.org/MartinFelis/love-android-sdl2/issue/23/release-build-crash-on-start
+         */
+        //拷贝字符串，并分配指针
+        argv[argc++] = SDL_strdup("app_process");
+
+        for (i = 0; i < len; ++i) {
+            const char* utf;
+            char* arg = NULL;
+            jstring string = (*env)->GetObjectArrayElement(env, array, i);
+            if (string) {
+                utf = (*env)->GetStringUTFChars(env, string, 0);
+                if (utf) {
+                    arg = SDL_strdup(utf);
+                    (*env)->ReleaseStringUTFChars(env, string, utf);
+                }
+                (*env)->DeleteLocalRef(env, string);
+            }
+            if (!arg) {
+                arg = SDL_strdup("");
+            }
+            argv[argc++] = arg;
+            XLOGI("nativeRunMain into ffplay arg %s",arg);
+        }
+        argv[argc] = NULL;
+
+        XLOGI("nativeRunMain into ffplay len:%d  argc:%d",len,argc);
+        /* Run the application. */
+        status = start(argc, argv);
+
+        /* Release the arguments. */
+        for (i = 0; i < argc; ++i) {
+            SDL_free(argv[i]);
+        }
+        SDL_stack_free(argv);
+
+    } else {
+        __android_log_print(ANDROID_LOG_ERROR, "SDL", "nativeRunMain(): Couldn't find function %s in library %s", function_name, library_file);
+    }
+    (*env)->ReleaseStringUTFChars(env, function, function_name);
+
+    XLOGI("nativeRunMain into dlclose");
+    return status;
 }
