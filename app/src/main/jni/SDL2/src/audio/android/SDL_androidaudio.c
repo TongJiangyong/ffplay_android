@@ -215,6 +215,7 @@ void ANDROIDAUDIO_ResumeDevices(void)
     }
 }
 
+
 #else 
 
 void ANDROIDAUDIO_ResumeDevices(void) {}
